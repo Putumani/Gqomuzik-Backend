@@ -2,6 +2,9 @@ import express from 'express';
 import busboy from 'busboy';
 import fs from 'fs';
 import { MongoClient } from 'mongodb';
+import ArtistModel from '../schemas/artistSchema';
+import SongModel from '../schemas/songSchema';
+import path from 'path';
 
 
 const app = express();
@@ -31,28 +34,27 @@ app.post('/api/upload', async (req, res) => {
 
   bb.on('finish', async () => {
     try {
-      await client.connect();
-      const db = client.db(dbName);
-      const collection = db.collection('audios');
-
       const artist = req.headers.artist as string;
       const songName = req.headers.songname as string;
 
-      const audioData = {
-        artist,
-        songName,
-        url: `${songName}.mp3` // Assuming songName can be used as a unique identifier
+      // Store the artist and song name in MongoDB
+      const artistDocument = new ArtistModel({ name: artist });
+      await artistDocument.save();
+
+      const songData = {
+        title: songName,
+        artist: artistDocument._id, // Reference to the artist
+        url: `${songName}.mp3`,
       };
 
-      await collection.insertOne(audioData);
+      const songDocument = new SongModel(songData);
+      await songDocument.save();
 
       res.writeHead(200, { Connection: 'close' });
-      res.end(`Uploaded successfully!!!`);
+      res.end('Uploaded successfully!!!');
     } catch (error) {
       console.error('Error uploading audio:', error);
       res.status(500).send('Internal Server Error');
-    } finally {
-      client.close();
     }
   });
 
@@ -71,7 +73,7 @@ app.get('/api/audios/:audioId', (req, res) => {
 
   const audioId = req.params.audioId as string;
 
-  const audioPath = `./audios/${audioId}.mp3`;
+  const audioPath = path.join(process.cwd(), `./audios/${audioId}.mp3`);
 
   const audioSizeInBytes = fs.statSync(audioPath).size;
 
