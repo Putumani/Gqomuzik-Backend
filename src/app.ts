@@ -11,7 +11,7 @@ app.get('/', (req, res) => {
   res.send('this is the backend server!');
 });
 
-const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/gqomuzik-db';
+const mongoUri = process.env.MONGODB_URI;
 
 MongoClient.connect(mongoUri)
   .then((client) => {
@@ -28,3 +28,6 @@ MongoClient.connect(mongoUri)
   .catch((err) => {
     console.error('Error connecting to MongoDB:', err);
   });
+
+
+  
